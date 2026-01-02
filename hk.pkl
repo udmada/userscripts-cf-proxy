@@ -10,9 +10,12 @@ hooks {
                 check = "cargo fmt --check"
                 fix = "cargo fmt"
             }
+        }
+    }
+    ["pre-push"] {
+        steps {
             ["cargo-test"] {
                 check = "cargo test --lib"
-                exclusive = true
             }
         }
     }
