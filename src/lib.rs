@@ -1,11 +1,7 @@
-use once_cell::sync::Lazy;
 use std::borrow::Cow;
-use std::sync::Mutex;
 use worker::{
     event, js_sys::Math, Env, Headers, Method, Request, RequestInit, Response, Result, Url,
 };
-
-static TOKEN_CACHE: Lazy<Mutex<String>> = Lazy::new(|| Mutex::new(String::new()));
 
 #[event(fetch)]
 pub async fn main(req: Request, env: Env, _ctx: worker::Context) -> Result<Response> {
@@ -63,32 +59,23 @@ pub async fn main(req: Request, env: Env, _ctx: worker::Context) -> Result<Respo
             let gh_token = get_env_var(&env, "GH_TOKEN");
             let token_env = get_env_var(&env, "TOKEN");
             let query_token = get_query_param(&url, "token");
-            let mut cached_token = TOKEN_CACHE
-                .lock()
-                .unwrap_or_else(|poisoned| poisoned.into_inner())
-                .clone();
 
             let github_token = if gh_token.is_some() && token_env.is_some() {
                 if query_token.as_deref() == token_env.as_deref() {
-                    gh_token.clone().unwrap_or_else(|| cached_token.clone())
+                    gh_token.clone().unwrap_or_default()
                 } else {
-                    query_token.clone().unwrap_or_else(|| cached_token.clone())
+                    query_token.clone().unwrap_or_default()
                 }
             } else {
                 query_token
                     .clone()
                     .or(gh_token.clone())
                     .or(token_env.clone())
-                    .unwrap_or_else(|| cached_token.clone())
+                    .unwrap_or_default()
             };
 
             if github_token.is_empty() {
                 return Response::error("TOKEN must not be empty", 400);
-            }
-
-            cached_token = github_token.clone();
-            if let Ok(mut token_lock) = TOKEN_CACHE.lock() {
-                *token_lock = cached_token;
             }
 
             headers.append("Authorization", &format!("token {}", github_token))?;
