@@ -143,7 +143,7 @@ mise install
 Build locally:
 
 ```bash
-mise run build-wasm
+mise run build
 ```
 
 Deploy:

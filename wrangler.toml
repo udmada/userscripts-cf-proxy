@@ -4,7 +4,12 @@ compatibility_date = "2025-11-17"
 keep_vars = true
 
 [build]
-command = "mise run build-wasm"
+command = "mise run build"
 
 [build.upload]
 format = "modules"
+
+[vars]
+GH_NAME = "udmada"
+GH_REPO = "userscripts"
+GH_BRANCH = "master"

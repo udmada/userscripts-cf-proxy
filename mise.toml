@@ -2,8 +2,19 @@
 node = "lts"
 rust = "stable"
 
-[tasks.build-wasm]
-run = "cargo install -q worker-build && worker-build --release"
+[env]
+CARGO_INSTALL_ROOT = "{{config_root}}/.cargo"
+PATH = "{{config_root}}/.cargo/bin:{{env.PATH}}"
+
+[tasks.setup]
+description = "Install worker-build toolchain"
+run = "cargo install worker-build"
+
+[tasks.build]
+description = "Build the Rust worker for Cloudflare"
+run = "worker-build --release"
+depends = ["setup"]
 
 [tasks.deploy]
+description = "Deploy to Cloudflare Workers"
 run = "wrangler deploy"
