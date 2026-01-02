@@ -18,53 +18,53 @@ export default {
 			}
 			//console.log(githubRawUrl);
 			
-			// 初始化请求头
+			// Initialise request headers
 			const headers = new Headers();
-			let authTokenSet = false; // 标记是否已经设置了认证token
+			let authTokenSet = false; // Track whether the auth token has been set
 			
-			// 检查TOKEN_PATH特殊路径鉴权
+			// Check TOKEN_PATH scoped authorisation
 			if (env.TOKEN_PATH) {
-				const 需要鉴权的路径配置 = await ADD(env.TOKEN_PATH);
-				// 将路径转换为小写进行比较，防止大小写绕过
+				const requiredAuthPaths = await ADD(env.TOKEN_PATH);
+				// Compare lowercased paths to prevent case-based bypasses
 				const normalizedPathname = decodeURIComponent(url.pathname.toLowerCase());
 
-				//检测访问路径是否需要鉴权
-				for (const pathConfig of 需要鉴权的路径配置) {
+				// Check whether the request path requires authorisation
+				for (const pathConfig of requiredAuthPaths) {
 					const configParts = pathConfig.split('@');
 					if (configParts.length !== 2) {
-						// 如果格式不正确，跳过这个配置
+						// Skip malformed configuration entries
 						continue;
 					}
 
 					const [requiredToken, pathPart] = configParts;
 					const normalizedPath = '/' + pathPart.toLowerCase().trim();
 
-					// 精确匹配路径段，防止部分匹配绕过
+					// Match path segments exactly to prevent partial bypasses
 					const pathMatches = normalizedPathname === normalizedPath ||
 						normalizedPathname.startsWith(normalizedPath + '/');
 
 					if (pathMatches) {
 						const providedToken = url.searchParams.get('token');
 						if (!providedToken) {
-							return new Response('TOKEN不能为空', { status: 400 });
+							return new Response('TOKEN must not be empty', { status: 400 });
 						}
 
 						if (providedToken !== requiredToken.trim()) {
-							return new Response('TOKEN错误', { status: 403 });
+							return new Response('TOKEN is invalid', { status: 403 });
 						}
 
-						// token验证成功，使用GH_TOKEN作为GitHub请求的token
+						// Token validated; use GH_TOKEN for the GitHub request
 						if (!env.GH_TOKEN) {
-							return new Response('服务器GitHub TOKEN配置错误', { status: 500 });
+							return new Response('Server GitHub TOKEN configuration error', { status: 500 });
 						}
 						headers.append('Authorization', `token ${env.GH_TOKEN}`);
 						authTokenSet = true;
-						break; // 找到匹配的路径配置后退出循环
+						break; // Stop after the first matching path configuration
 					}
 				}
 			}
 			
-			// 如果TOKEN_PATH没有设置认证，使用默认token逻辑
+			// If TOKEN_PATH did not set auth, fall back to default token logic
 			if (!authTokenSet) {
 				if (env.GH_TOKEN && env.TOKEN) {
 					if (env.TOKEN == url.searchParams.get('token')) token = env.GH_TOKEN || token;
@@ -74,23 +74,23 @@ export default {
 				const githubToken = token;
 				//console.log(githubToken);
 				if (!githubToken || githubToken == '') {
-					return new Response('TOKEN不能为空', { status: 400 });
+					return new Response('TOKEN must not be empty', { status: 400 });
 				}
 				headers.append('Authorization', `token ${githubToken}`);
 			}
 
-			// 发起请求
+			// Issue request
 			const response = await fetch(githubRawUrl, { headers });
 
-			// 检查请求是否成功 (状态码 200 到 299)
+			// Check whether the request succeeded (status 200-299)
 			if (response.ok) {
 				return new Response(response.body, {
 					status: response.status,
 					headers: response.headers
 				});
 			} else {
-				const errorText = env.ERROR || '无法获取文件，检查路径或TOKEN是否正确。';
-				// 如果请求不成功，返回适当的错误响应
+				const errorText = env.ERROR || 'Unable to fetch the file. Check the path or TOKEN.';
+				// Return a suitable error response
 				return new Response(errorText, { status: response.status });
 			}
 
@@ -101,7 +101,7 @@ export default {
 				const URL = URLs[Math.floor(Math.random() * URLs.length)];
 				return envKey === 'URL302' ? Response.redirect(URL, 302) : fetch(new Request(URL, request));
 			}
-			//首页改成一个nginx伪装页
+			// Home page uses a fake nginx page
 			return new Response(await nginx(), {
 				headers: {
 					'Content-Type': 'text/html; charset=UTF-8',
@@ -143,7 +143,7 @@ async function nginx() {
 }
 
 async function ADD(envadd) {
-	var addtext = envadd.replace(/[	|"'\r\n]+/g, ',').replace(/,+/g, ',');	// 将空格、双引号、单引号和换行符替换为逗号
+	var addtext = envadd.replace(/[	|"'\r\n]+/g, ',').replace(/,+/g, ',');	// Replace separators with commas
 	//console.log(addtext);
 	if (addtext.charAt(0) == ',') addtext = addtext.slice(1);
 	if (addtext.charAt(addtext.length - 1) == ',') addtext = addtext.slice(0, addtext.length - 1);

@@ -1,4 +1,10 @@
 name = "cf-workers-raw"
-main = "_worker.js"
+main = "build/worker/shim.mjs"
 compatibility_date = "2025-08-18"
 keep_vars = true
+
+[build]
+command = "mise run build-wasm"
+
+[build.upload]
+format = "modules"

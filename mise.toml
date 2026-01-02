@@ -1,0 +1,9 @@
+[tools]
+node = "lts"
+rust = "stable"
+
+[tasks.build-wasm]
+run = "cargo install -q worker-build && worker-build --release"
+
+[tasks.deploy]
+run = "wrangler deploy"
