@@ -13,6 +13,5 @@ keywords = ["cloudflare", "workers", "github", "proxy"]
 crate-type = ["cdylib"]
 
 [dependencies]
-once_cell = "1.21.3"
 urlencoding = "2.1.3"
 worker = { version = "0.7.2", features = ["http"] }
