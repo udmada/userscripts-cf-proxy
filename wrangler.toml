@@ -1,4 +1,15 @@
-name = "cf-workers-raw"
-main = "_worker.js"
-compatibility_date = "2025-08-18"
-keep_vars = true
+name = "userscripts-cf-proxy"
+main = "build/worker/shim.mjs"
+compatibility_date = "2025-01-02"
+
+[build]
+command = "mise run build"
+
+# Environment variables (uncomment and configure as needed)
+# [vars]
+# GH_NAME = "your-github-username"
+# GH_REPO = "your-repo-name"
+# GH_BRANCH = "main"
+# ERROR = "Unable to fetch file. Check that the path and token are correct."
+
+# Secrets (set via `wrangler secret put`): GH_TOKEN, TOKEN, TOKEN_PATH, URL302, URL

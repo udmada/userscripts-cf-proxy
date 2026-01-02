@@ -1,0 +1,22 @@
+[package]
+name = "userscripts-cf-proxy"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+description = "Cloudflare Worker proxy for GitHub raw files"
+license = "MIT"
+publish = false
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+worker = "0.7"
+regex = "1.12"
+urlencoding = "2.1"
+js-sys = "0.3"
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
