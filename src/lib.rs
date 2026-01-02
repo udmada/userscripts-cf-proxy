@@ -214,14 +214,60 @@ fn nginx_html() -> &'static str {
 	<h1>Welcome to nginx!</h1>
 	<p>If you see this page, the nginx web server is successfully installed and
 	working. Further configuration is required.</p>
-	
+
 	<p>For online documentation and support please refer to
 	<a href="http://nginx.org/">nginx.org</a>.<br/>
 	Commercial support is available at
 	<a href="http://nginx.com">nginx.com</a>.</p>
-	
+
 	<p><em>Thank you for using nginx.</em></p>
 	</body>
 	</html>
 	"#
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{nginx_html, normalize_path, parse_env_list};
+
+    #[test]
+    fn parse_env_list_handles_separators() {
+        let value = "one,two|three\nfour\tfive";
+        let parsed = parse_env_list(value);
+        assert_eq!(parsed, vec!["one", "two", "three", "four", "five"]);
+    }
+
+    #[test]
+    fn parse_env_list_collapses_consecutive_separators() {
+        assert_eq!(parse_env_list("a,,,,b|||c"), vec!["a", "b", "c"]);
+    }
+
+    #[test]
+    fn parse_env_list_trims_leading_trailing() {
+        assert_eq!(parse_env_list(",,,a,b,,,"), vec!["a", "b"]);
+    }
+
+    #[test]
+    fn parse_env_list_empty_input() {
+        assert!(parse_env_list("").is_empty());
+        assert!(parse_env_list(",,,|||").is_empty());
+    }
+
+    #[test]
+    fn normalize_path_decodes_and_lowercases() {
+        let normalized = normalize_path("/Some%20Path/File.TXT");
+        assert_eq!(normalized, "/some path/file.txt");
+    }
+
+    #[test]
+    fn normalize_path_invalid_encoding_passthrough() {
+        assert_eq!(normalize_path("/foo%ZZbar"), "/foo%zzbar");
+    }
+
+    #[test]
+    fn nginx_html_contains_expected_content() {
+        let html = nginx_html();
+        assert!(html.contains("<!DOCTYPE html>"));
+        assert!(html.contains("Welcome to nginx!"));
+    }
 }
