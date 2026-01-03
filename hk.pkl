@@ -12,7 +12,8 @@ hooks {
             }
             ["pkl-workflows"] {
                 glob = List(".github/pkl-workflows/*.pkl")
-                check = #"pkl eval .github/pkl-workflows/*.pkl -o ".github/workflows/%{moduleName}.yml""#
+                check = #"pkl eval .github/pkl-workflows/*.pkl -o ".github/workflows/%{moduleName}.yml" && git add .github/workflows/*.yml"#
+                exclusive = true
             }
         }
     }
