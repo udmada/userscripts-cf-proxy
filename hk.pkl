@@ -1,0 +1,27 @@
+amends "package://github.com/jdx/hk/releases/download/v1.28.0/hk@1.28.0#/Config.pkl"
+
+hooks {
+    ["pre-commit"] {
+        fix = true
+        stash = "git"
+        steps {
+            ["cargo-fmt"] {
+                glob = List("**/*.rs")
+                check = "cargo fmt --check"
+                fix = "cargo fmt"
+            }
+            ["pkl-workflows"] {
+                glob = List(".github/pkl-workflows/*.pkl")
+                check = #"pkl eval .github/pkl-workflows/*.pkl -o ".github/workflows/%{moduleName}.yml" && git add .github/workflows/*.yml"#
+                exclusive = true
+            }
+        }
+    }
+    ["pre-push"] {
+        steps {
+            ["cargo-test"] {
+                check = "cargo test --lib"
+            }
+        }
+    }
+}
