@@ -10,6 +10,10 @@ hooks {
                 check = "cargo fmt --check"
                 fix = "cargo fmt"
             }
+            ["pkl-workflows"] {
+                glob = List(".github/pkl-workflows/*.pkl")
+                check = #"pkl eval .github/pkl-workflows/*.pkl -o ".github/workflows/%{moduleName}.yml""#
+            }
         }
     }
     ["pre-push"] {

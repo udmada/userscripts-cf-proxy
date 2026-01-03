@@ -1,0 +1,35 @@
+# Generated from Workflow.pkl. DO NOT EDIT.
+name: Deploy to Cloudflare
+'on':
+  pull_request:
+    paths:
+    - src/**
+    - Cargo.toml
+    - Cargo.lock
+    - wrangler.toml
+  push:
+    branches:
+    - master
+    paths:
+    - src/**
+    - Cargo.toml
+    - Cargo.lock
+    - wrangler.toml
+env:
+  CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+  CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+jobs:
+  deploy:
+    runs-on: ubuntu-slim
+    environment:
+      name: publish-and-release
+    steps:
+    - uses: actions/checkout@v4
+    - uses: jdx/mise-action@v2
+    - name: Run tests
+      run: mise run test
+    - name: Build WASM
+      run: mise run build
+    - name: Deploy to Cloudflare Workers
+      if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+      run: mise run deploy
