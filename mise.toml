@@ -1,5 +1,6 @@
 [tools]
 node = "lts"
+pnpm = "latest"
 rust = "stable"
 
 [env]
@@ -17,4 +18,4 @@ depends = ["setup"]
 
 [tasks.deploy]
 description = "Deploy to Cloudflare Workers"
-run = "wrangler deploy"
+run = "pnpm dlx wrangler deploy"
