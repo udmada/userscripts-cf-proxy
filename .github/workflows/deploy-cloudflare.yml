@@ -27,7 +27,7 @@ jobs:
     - uses: actions/checkout@v4
     - uses: jdx/mise-action@v2
     - name: Run tests
-      run: mise run test
+      run: cargo test --lib
     - name: Build WASM
       run: mise run build
     - name: Deploy to Cloudflare Workers
