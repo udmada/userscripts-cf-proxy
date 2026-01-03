@@ -61,16 +61,17 @@ pub async fn main(req: Request, env: Env, _ctx: worker::Context) -> Result<Respo
             let query_token = get_query_param(&url, "token");
 
             let github_token = if gh_token.is_some() && token_env.is_some() {
-                if query_token.as_deref() == token_env.as_deref() {
-                    gh_token.clone().unwrap_or_default()
-                } else {
-                    query_token.clone().unwrap_or_default()
+                // Both GH_TOKEN and TOKEN are configured - validate query token
+                match &query_token {
+                    Some(qt) if qt == token_env.as_ref().unwrap() => gh_token.unwrap(),
+                    Some(_) => return Response::error("TOKEN is invalid", 403),
+                    None => return Response::error("TOKEN must not be empty", 400),
                 }
             } else {
+                // Fallback: use query_token > GH_TOKEN > TOKEN
                 query_token
-                    .clone()
-                    .or(gh_token.clone())
-                    .or(token_env.clone())
+                    .or(gh_token)
+                    .or(token_env)
                     .unwrap_or_default()
             };
 
