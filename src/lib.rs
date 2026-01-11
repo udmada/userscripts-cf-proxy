@@ -7,8 +7,10 @@ use worker::{
 pub async fn main(req: Request, env: Env, _ctx: worker::Context) -> Result<Response> {
     let url = req.url()?;
     if url.path() != "/" {
-        let github_raw_url = build_github_raw_url(&url, &env);
+        let github_api_url = build_github_api_url(&url, &env);
         let headers = Headers::new();
+        headers.append("Accept", "application/vnd.github.raw")?;
+        headers.append("User-Agent", "cloudflare-worker")?;
         let mut auth_token_set = false;
 
         if let Some(token_path_raw) = get_env_var(&env, "TOKEN_PATH") {
@@ -61,18 +63,21 @@ pub async fn main(req: Request, env: Env, _ctx: worker::Context) -> Result<Respo
             let query_token = get_query_param(&url, "token");
 
             let github_token = if gh_token.is_some() && token_env.is_some() {
-                // Both GH_TOKEN and TOKEN are configured - validate query token
+                // Both GH_TOKEN and TOKEN are configured - validate query token.
                 match &query_token {
                     Some(qt) if qt == token_env.as_ref().unwrap() => gh_token.unwrap(),
                     Some(_) => return Response::error("TOKEN is invalid", 403),
                     None => return Response::error("TOKEN must not be empty", 400),
                 }
+            } else if let Some(token) = gh_token {
+                // Prefer GH_TOKEN if configured, even when a query token is present.
+                token
+            } else if let Some(token) = token_env {
+                // TOKEN alone behaves like a GitHub token per docs.
+                token
             } else {
-                // Fallback: use query_token > GH_TOKEN > TOKEN
-                query_token
-                    .or(gh_token)
-                    .or(token_env)
-                    .unwrap_or_default()
+                // Fall back to a query token only when no server-side tokens exist.
+                query_token.unwrap_or_default()
             };
 
             if github_token.is_empty() {
@@ -86,7 +91,7 @@ pub async fn main(req: Request, env: Env, _ctx: worker::Context) -> Result<Respo
         init.with_method(Method::Get);
         init.with_headers(headers);
 
-        let github_request = Request::new_with_init(&github_raw_url, &init)?;
+        let github_request = Request::new_with_init(&github_api_url, &init)?;
         let response = worker::Fetch::Request(github_request).send().await?;
 
         let status = response.status_code();
@@ -123,34 +128,39 @@ pub async fn main(req: Request, env: Env, _ctx: worker::Context) -> Result<Respo
     Ok(response)
 }
 
-fn build_github_raw_url(url: &Url, env: &Env) -> String {
-    let base = "https://raw.githubusercontent.com";
+fn build_github_api_url(url: &Url, env: &Env) -> String {
     let path = url.path();
-    let base_lower = base.to_lowercase();
+    let path_trimmed = path.trim_start_matches('/');
+
+    // Check if the path contains a full raw.githubusercontent.com URL
+    let raw_base = "raw.githubusercontent.com/";
     let path_lower = path.to_lowercase();
-
-    if let Some(index) = path_lower.find(&base_lower) {
-        let suffix_start = index + base.len();
+    if let Some(index) = path_lower.find(raw_base) {
+        // Extract: owner/repo/branch/filepath from the embedded URL
+        let suffix_start = index + raw_base.len();
         let suffix = path.get(suffix_start..).unwrap_or("");
-        return format!("{}{}", base, suffix);
-    }
-
-    let mut github_raw_url = String::from(base);
-    if let Some(name) = get_env_var(env, "GH_NAME") {
-        github_raw_url.push('/');
-        github_raw_url.push_str(&name);
-        if let Some(repo) = get_env_var(env, "GH_REPO") {
-            github_raw_url.push('/');
-            github_raw_url.push_str(&repo);
-            if let Some(branch) = get_env_var(env, "GH_BRANCH") {
-                github_raw_url.push('/');
-                github_raw_url.push_str(&branch);
-            }
+        let parts: Vec<&str> = suffix.splitn(4, '/').collect();
+        if parts.len() >= 4 {
+            let owner = parts[0];
+            let repo = parts[1];
+            let branch = parts[2];
+            let filepath = parts[3];
+            return format!(
+                "https://api.github.com/repos/{}/{}/contents/{}?ref={}",
+                owner, repo, filepath, branch
+            );
         }
     }
 
-    github_raw_url.push_str(path);
-    github_raw_url
+    // Build URL from environment variables
+    let owner = get_env_var(env, "GH_NAME").unwrap_or_default();
+    let repo = get_env_var(env, "GH_REPO").unwrap_or_default();
+    let branch = get_env_var(env, "GH_BRANCH").unwrap_or_else(|| "master".to_string());
+
+    format!(
+        "https://api.github.com/repos/{}/{}/contents/{}?ref={}",
+        owner, repo, path_trimmed, branch
+    )
 }
 
 fn get_env_var(env: &Env, key: &str) -> Option<String> {
