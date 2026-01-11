@@ -3,6 +3,6 @@ build/
 .cargo/
 *.patch
 .DS_Store
-.dev.vars
+.dev.vars*
 .wrangler/
 node_modules/
