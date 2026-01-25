@@ -6,9 +6,18 @@ keep_vars = true
 [build]
 command = "mise run build"
 
+# Default: userscripts
 [vars]
 GH_NAME = "udmada"
 GH_REPO = "userscripts"
+GH_BRANCH = "master"
+
+# Userstyles environment
+[env.userstyles]
+name = "userstyles-proxy"
+[env.userstyles.vars]
+GH_NAME = "udmada"
+GH_REPO = "userstyles"
 GH_BRANCH = "master"
 
 [observability]

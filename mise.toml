@@ -17,5 +17,9 @@ run = "worker-build --release"
 depends = ["setup"]
 
 [tasks.deploy]
-description = "Deploy to Cloudflare Workers"
-run = "pnpm dlx wrangler deploy"
+description = "Deploy all environments to Cloudflare Workers"
+run = "pnpm dlx wrangler deploy && pnpm dlx wrangler deploy --env userstyles"
+
+[tasks."deploy:userstyles"]
+description = "Deploy userstyles environment only"
+run = "pnpm dlx wrangler deploy --env userstyles"
